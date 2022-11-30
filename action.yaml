@@ -1,42 +1,21 @@
 name: 'Slack Notify'
 description: 'Post a slack message'
 inputs:
-  text_message:
-    description: 'The message body to send to slack, this should be json format. See https://api.slack.com/messaging/webhooks#posting_with_webhooks'
+  workflow_name:
+    description: The name of the workflow that called this action
     required: true
   webhook_url:
     description: 'The webhook URL including the hooks.slack.com part'
     required: true
+  message:
+    description: "Additional information passed on"
+  status:
+    description: Overall status
+    required: true
 runs:
-  using: docker
-  image: docker://curlimages/curl
-  args:
-    - curl
-    - ${{ inputs.webhook_url }}
-    - -v
-    - '-H "Content-Type: application/json"'
-    - |
-      -d '{"text": "${{ inputs.text_message}}" }'
-
-#, "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy succeeded for ${{ github.repository }}*"}},{"type":"divider"},{"type":"section","fields":[{"type":"mrkdwn","text":"*Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: ${{ job.status }}"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]}]}'
-
-
-
-
-
-
-    #        notify:
-    # runs-on: ['deployment']
-    # needs: [ upload_forms, setup, build]
-    # container:
-    #   image: curlimages/curl
-    # steps:
-    #   - name: Send Notification
-    #     if: success()
-    #     run: |
-
-
-    #   - name: Send Notification
-    #     if: failure()
-    #     run: |
-    #       curl ${{ secrets.SLACK_WEBHOOK }} -v -H "Content-Type: application/json" -d '{"text": "Deploy failed for ${{ github.repository }}", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy failed for ${{ github.repository }}*"}},{"type":"divider"},{"type":"section","fields":[{"type":"mrkdwn","text":"*Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: ${{ job.status }}"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]}]}'
+  using: composite
+  steps:
+    - name: Notify Success
+      shell: bash
+      run: |
+        curl ${{ inputs.webhook_url }} -v -H "Content-Type: application/json" -d '{"text": "Action: ${{ inputs.workflow_name }} in ${{ github.repository}} ${{ inputs.status }}.", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Action: ${{ inputs.workflow_name }} in ${{ github.repository}} ${{ inputs.status }}.*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: succeeded"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"${{ inputs.message }}"}}]}'
