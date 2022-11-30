@@ -1,42 +1,28 @@
 name: 'Slack Notify'
 description: 'Post a slack message'
 inputs:
-  text_message:
-    description: 'The message body to send to slack, this should be json format. See https://api.slack.com/messaging/webhooks#posting_with_webhooks'
-    required: true
   webhook_url:
     description: 'The webhook URL including the hooks.slack.com part'
     required: true
+  message:
+    description: "Additional information passed on"
 runs:
-  using: docker
-  image: docker://curlimages/curl
-  args:
-    - curl
-    - ${{ inputs.webhook_url }}
-    - -v
-    - '-H "Content-Type: application/json"'
-    - |
-      -d '{"text": "${{ inputs.text_message}}" }'
+  using: composite
+  steps:
+    - name: Notify Success
+      if: success()
+      shell: bash
+      run: |
+        curl ${{ inputs.webhook_url }} -v -H "Content-Type: application/json" -d '{"text": "Deploy to ${{ github.repository}} succeeded.", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy to ${{ github.repository}} succeeded.*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: succeeded"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"${{ inputs.message }}"}}]}'
 
-#, "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy succeeded for ${{ github.repository }}*"}},{"type":"divider"},{"type":"section","fields":[{"type":"mrkdwn","text":"*Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: ${{ job.status }}"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]}]}'
+    - name: Notify Failure
+      if: failure()
+      shell: bash
+      run: |
+        curl ${{ inputs.webhook_url }} -v -H "Content-Type: application/json" -d '{"text": "Deploy to ${{ github.repository}} failed.", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy to ${{ github.repository}} failed.*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: succeeded"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"${{ inputs.message }}"}}]}'
 
-
-
-
-
-
-    #        notify:
-    # runs-on: ['deployment']
-    # needs: [ upload_forms, setup, build]
-    # container:
-    #   image: curlimages/curl
-    # steps:
-    #   - name: Send Notification
-    #     if: success()
-    #     run: |
-
-
-    #   - name: Send Notification
-    #     if: failure()
-    #     run: |
-    #       curl ${{ secrets.SLACK_WEBHOOK }} -v -H "Content-Type: application/json" -d '{"text": "Deploy failed for ${{ github.repository }}", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy failed for ${{ github.repository }}*"}},{"type":"divider"},{"type":"section","fields":[{"type":"mrkdwn","text":"*Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: ${{ job.status }}"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]}]}'
+    - name: Notify Cancelled
+      if: cancelled()
+      shell: bash
+      run: |
+        curl ${{ inputs.webhook_url }} -v -H "Content-Type: application/json" -d '{"text": "Deploy to ${{ github.repository}} cancelled. ", "blocks":[{"type":"section","text":{"type":"mrkdwn","text":"*Deploy to ${{ github.repository}} cancelled.*"}},{"type":"section","fields":[{"type":"mrkdwn","text":"*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Logs>"},{"type":"mrkdwn","text":"*Status*: succeeded"},{"type":"mrkdwn","text":"*Actor*: ${{ github.actor }}"},{"type":"mrkdwn","text":"*Event*: ${{ github.event_name }}"}]},{"type":"divider"},{"type":"section","text":{"type":"mrkdwn","text":"${{ inputs.message }}"}}]}'

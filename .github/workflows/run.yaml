@@ -1,0 +1,13 @@
+name: Check changes to Gemfile are reflected on Gemfile.lock
+
+on:
+  push:
+
+jobs:
+  notifytwo:
+    runs-on: ['ubuntu-latest']
+    steps:
+      - uses: bunnyapp/slack-notify@main
+        with:
+          text_message: Deploy succeeded for ${{ github.repository }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
